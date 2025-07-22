@@ -109,7 +109,7 @@ class RTanksScraper:
                 'premium': False,
                 'group': 'Unknown',
                 'is_online': False,
-                'status_indicator': '🔴',
+                'status_indicator': 'π”΄',
                 'equipment': {'turrets': [], 'hulls': []}
             }
             
@@ -118,25 +118,23 @@ class RTanksScraper:
             logger.info(f"HTML contains 'online': {'online' in html.lower()}")
             
             # Parse online status from the small circle near player name
-            # Look for the actual circle indicator pattern in HTML
-        # Parse online status from a hidden span with id="online_status"
-try:
-    status_span = soup.find('span', id='online_status')
-    if status_span:
-        status_text = status_span.get_text(strip=True).lower()
-        is_online = status_text == 'yes'
-        logger.info(f"{username} detected as {'ONLINE' if is_online else 'OFFLINE'} from span")
-    else:
-        is_online = False
-        logger.warning("No <span id='online_status'> found")
-except Exception as e:
-    is_online = False
-    logger.error(f"Error reading online status from span: {e}")
+            # Parse online status from a hidden span with id="online_status"
+            try:
+                status_span = soup.find('span', id='online_status')
+                if status_span:
+                    status_text = status_span.get_text(strip=True).lower()
+                    is_online = status_text == 'yes'
+                    logger.info(f"{username} detected as {'ONLINE' if is_online else 'OFFLINE'} from span")
+                else:
+                    is_online = False
+                    logger.warning("No <span id='online_status'> found")
+            except Exception as e:
+                is_online = False
+                logger.error(f"Error reading online status from span: {e}")
 
-
-            
             player_data['is_online'] = is_online
-            player_data['status_indicator'] = '🟢' if is_online else '🔴'
+            player_data['status_indicator'] = 'πΆ' if is_online else 'π”΄'
+            logger.info(f"{username} detected as {'ONLINE' if is_online else 'OFFLINE'}")
             logger.info(f"{username} detected as {'ONLINE' if is_online else 'OFFLINE'}")
             
             # Parse experience FIRST - Look for current/max format like "105613/125000"
@@ -166,7 +164,7 @@ except Exception as e:
             if not exp_found:
                 single_exp_patterns = [
                     r'Experience[^0-9]*(\d{1,3}(?:,?\d{3})*)',
-                    r'Опыт[^0-9]*(\d{1,3}(?:,?\d{3})*)',
+                    r'ΠΠΏΡ‹Ρ‚[^0-9]*(\d{1,3}(?:,?\d{3})*)',
                     r'"experience"[^0-9]*(\d{1,3}(?:,?\d{3})*)'
                 ]
                 
@@ -180,39 +178,39 @@ except Exception as e:
             
             # Parse rank - Enhanced detection with experience-based fallback
             rank_patterns = [
-                r'(Легенда|Legend)\s*(\d*)',
-                r'(Генералиссимус|Generalissimo)',
-                r'(Командир бригады|Brigadier Commander)',
-                r'(Командир полковник|Colonel Commander)',
-                r'(Командир подполковник|Lieutenant Colonel Commander)',
-                r'(Командир майор|Major Commander)',
-                r'(Командир капитан|Captain Commander)',
-                r'(Командир лейтенант|Lieutenant Commander)',
-                r'(Командир|Commander)',
-                r'(Фельдмаршал|Field Marshal)',
-                r'(Маршал|Marshal)',
-                r'(Генерал|General)',
-                r'(Генерал-лейтенант|Lieutenant General)',
-                r'(Генерал-майор|Major General)',
-                r'(Бригадир|Brigadier)',
-                r'(Полковник|Colonel)',
-                r'(Подполковник|Lieutenant Colonel)',
-                r'(Майор|Major)',
-                r'(Капитан|Captain)',
-                r'(Старший лейтенант|First Lieutenant)',
-                r'(Лейтенант|Second Lieutenant)',
-                r'(Старший прапорщик|Master Warrant Officer)',
-                r'(Прапорщик|Warrant Officer)',
-                r'(Старшина|Sergeant Major)',
-                r'(Старший сержант|First Sergeant)',
-                r'(Сержант|Master Sergeant)',
-                r'(Младший сержант|Staff Sergeant)',
-                r'(Ефрейтор|Sergeant)',
-                r'(Старший ефрейтор|Master Corporal)',
-                r'(Капрал|Corporal)',
-                r'(Гефрейтор|Gefreiter)',
-                r'(Рядовой|Private)',
-                r'(Новобранец|Recruit)'
+                r'(Π›ΠµΠ³ΠµΠ½Π΄Π°|Legend)\s*(\d*)',
+                r'(Π“ΠµΠ½ΠµΡ€Π°Π»ΠΈΡΡΠΈΠΌΡƒΡ|Generalissimo)',
+                r'(ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ Π±Ρ€ΠΈΠ³Π°Π΄Ρ‹|Brigadier Commander)',
+                r'(ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ ΠΏΠΎΠ»ΠΊΠΎΠ²Π½ΠΈΠΊ|Colonel Commander)',
+                r'(ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ ΠΏΠΎΠ΄ΠΏΠΎΠ»ΠΊΠΎΠ²Π½ΠΈΠΊ|Lieutenant Colonel Commander)',
+                r'(ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ ΠΌΠ°ΠΉΠΎΡ€|Major Commander)',
+                r'(ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ ΠΊΠ°ΠΏΠΈΡ‚Π°Π½|Captain Commander)',
+                r'(ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ Π»ΠµΠΉΡ‚ΠµΠ½Π°Π½Ρ‚|Lieutenant Commander)',
+                r'(ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€|Commander)',
+                r'(Π¤ΠµΠ»ΡΠ΄ΠΌΠ°Ρ€ΡΠ°Π»|Field Marshal)',
+                r'(ΠΠ°Ρ€ΡΠ°Π»|Marshal)',
+                r'(Π“ΠµΠ½ΠµΡ€Π°Π»|General)',
+                r'(Π“ΠµΠ½ΠµΡ€Π°Π»-Π»ΠµΠΉΡ‚ΠµΠ½Π°Π½Ρ‚|Lieutenant General)',
+                r'(Π“ΠµΠ½ΠµΡ€Π°Π»-ΠΌΠ°ΠΉΠΎΡ€|Major General)',
+                r'(Π‘Ρ€ΠΈΠ³Π°Π΄ΠΈΡ€|Brigadier)',
+                r'(ΠΠΎΠ»ΠΊΠΎΠ²Π½ΠΈΠΊ|Colonel)',
+                r'(ΠΠΎΠ΄ΠΏΠΎΠ»ΠΊΠΎΠ²Π½ΠΈΠΊ|Lieutenant Colonel)',
+                r'(ΠΠ°ΠΉΠΎΡ€|Major)',
+                r'(ΠΠ°ΠΏΠΈΡ‚Π°Π½|Captain)',
+                r'(Π΅Ρ‚Π°Ρ€ΡΠΈΠΉ Π»ΠµΠΉΡ‚ΠµΠ½Π°Π½Ρ‚|First Lieutenant)',
+                r'(Π›ΠµΠΉΡ‚ΠµΠ½Π°Π½Ρ‚|Second Lieutenant)',
+                r'(Π΅Ρ‚Π°Ρ€ΡΠΈΠΉ ΠΏΡ€Π°ΠΏΠΎΡ€Ρ‰ΠΈΠΊ|Master Warrant Officer)',
+                r'(ΠΡ€Π°ΠΏΠΎΡ€Ρ‰ΠΈΠΊ|Warrant Officer)',
+                r'(Π΅Ρ‚Π°Ρ€ΡΠΈΠ½Π°|Sergeant Major)',
+                r'(Π΅Ρ‚Π°Ρ€ΡΠΈΠΉ ΡΠµΡ€Π¶Π°Π½Ρ‚|First Sergeant)',
+                r'(Π΅ΠµΡ€Π¶Π°Π½Ρ‚|Master Sergeant)',
+                r'(ΠΠ»Π°Π΄ΡΠΈΠΉ ΡΠµΡ€Π¶Π°Π½Ρ‚|Staff Sergeant)',
+                r'(Π•Ρ„Ρ€ΠµΠΉΡ‚ΠΎΡ€|Sergeant)',
+                r'(Π΅Ρ‚Π°Ρ€ΡΠΈΠΉ ΠµΡ„Ρ€ΠµΠΉΡ‚ΠΎΡ€|Master Corporal)',
+                r'(ΠΠ°ΠΏΡ€Π°Π»|Corporal)',
+                r'(Π“ΠµΡ„Ρ€ΠµΠΉΡ‚ΠΎΡ€|Gefreiter)',
+                r'(Π ΡΠ΄ΠΎΠ²ΠΎΠΉ|Private)',
+                r'(ΠΠΎΠ²ΠΎΠ±Ρ€Π°Π½ΠµΡ†|Recruit)'
             ]
             
             rank_found = False
@@ -222,39 +220,39 @@ except Exception as e:
                     rank_text = rank_match.group(1)
                     # Map Russian ranks to English
                     rank_mapping = {
-                        'Легенда': 'Legend',
-                        'Генералиссимус': 'Generalissimo',
-                        'Командир бригады': 'Brigadier Commander',
-                        'Командир полковник': 'Colonel Commander',
-                        'Командир подполковник': 'Lieutenant Colonel Commander',
-                        'Командир майор': 'Major Commander',
-                        'Командир капитан': 'Captain Commander',
-                        'Командир лейтенант': 'Lieutenant Commander',
-                        'Командир': 'Commander',
-                        'Фельдмаршал': 'Field Marshal',
-                        'Маршал': 'Marshal',
-                        'Генерал': 'General',
-                        'Генерал-лейтенант': 'Lieutenant General',
-                        'Генерал-майор': 'Major General',
-                        'Бригадир': 'Brigadier',
-                        'Полковник': 'Colonel',
-                        'Подполковник': 'Lieutenant Colonel',
-                        'Майор': 'Major',
-                        'Капитан': 'Captain',
-                        'Старший лейтенант': 'First Lieutenant',
-                        'Лейтенант': 'Second Lieutenant',
-                        'Старший прапорщик': 'Master Warrant Officer',
-                        'Прапорщик': 'Warrant Officer',
-                        'Старшина': 'Sergeant Major',
-                        'Старший сержант': 'First Sergeant',
-                        'Сержант': 'Master Sergeant',
-                        'Младший сержант': 'Staff Sergeant',
-                        'Ефрейтор': 'Sergeant',
-                        'Старший ефрейтор': 'Master Corporal',
-                        'Капрал': 'Corporal',
-                        'Гефрейтор': 'Gefreiter',
-                        'Рядовой': 'Private',
-                        'Новобранец': 'Recruit'
+                        'Π›ΠµΠ³ΠµΠ½Π΄Π°': 'Legend',
+                        'Π“ΠµΠ½ΠµΡ€Π°Π»ΠΈΡΡΠΈΠΌΡƒΡ': 'Generalissimo',
+                        'ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ Π±Ρ€ΠΈΠ³Π°Π΄Ρ‹': 'Brigadier Commander',
+                        'ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ ΠΏΠΎΠ»ΠΊΠΎΠ²Π½ΠΈΠΊ': 'Colonel Commander',
+                        'ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ ΠΏΠΎΠ΄ΠΏΠΎΠ»ΠΊΠΎΠ²Π½ΠΈΠΊ': 'Lieutenant Colonel Commander',
+                        'ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ ΠΌΠ°ΠΉΠΎΡ€': 'Major Commander',
+                        'ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ ΠΊΠ°ΠΏΠΈΡ‚Π°Π½': 'Captain Commander',
+                        'ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€ Π»ΠµΠΉΡ‚ΠµΠ½Π°Π½Ρ‚': 'Lieutenant Commander',
+                        'ΠΠΎΠΌΠ°Π½Π΄ΠΈΡ€': 'Commander',
+                        'Π¤ΠµΠ»ΡΠ΄ΠΌΠ°Ρ€ΡΠ°Π»': 'Field Marshal',
+                        'ΠΠ°Ρ€ΡΠ°Π»': 'Marshal',
+                        'Π“ΠµΠ½ΠµΡ€Π°Π»': 'General',
+                        'Π“ΠµΠ½ΠµΡ€Π°Π»-Π»ΠµΠΉΡ‚ΠµΠ½Π°Π½Ρ‚': 'Lieutenant General',
+                        'Π“ΠµΠ½ΠµΡ€Π°Π»-ΠΌΠ°ΠΉΠΎΡ€': 'Major General',
+                        'Π‘Ρ€ΠΈΠ³Π°Π΄ΠΈΡ€': 'Brigadier',
+                        'ΠΠΎΠ»ΠΊΠΎΠ²Π½ΠΈΠΊ': 'Colonel',
+                        'ΠΠΎΠ΄ΠΏΠΎΠ»ΠΊΠΎΠ²Π½ΠΈΠΊ': 'Lieutenant Colonel',
+                        'ΠΠ°ΠΉΠΎΡ€': 'Major',
+                        'ΠΠ°ΠΏΠΈΡ‚Π°Π½': 'Captain',
+                        'Π΅Ρ‚Π°Ρ€ΡΠΈΠΉ Π»ΠµΠΉΡ‚ΠµΠ½Π°Π½Ρ‚': 'First Lieutenant',
+                        'Π›ΠµΠΉΡ‚ΠµΠ½Π°Π½Ρ‚': 'Second Lieutenant',
+                        'Π΅Ρ‚Π°Ρ€ΡΠΈΠΉ ΠΏΡ€Π°ΠΏΠΎΡ€Ρ‰ΠΈΠΊ': 'Master Warrant Officer',
+                        'ΠΡ€Π°ΠΏΠΎΡ€Ρ‰ΠΈΠΊ': 'Warrant Officer',
+                        'Π΅Ρ‚Π°Ρ€ΡΠΈΠ½Π°': 'Sergeant Major',
+                        'Π΅Ρ‚Π°Ρ€ΡΠΈΠΉ ΡΠµΡ€Π¶Π°Π½Ρ‚': 'First Sergeant',
+                        'Π΅ΠµΡ€Π¶Π°Π½Ρ‚': 'Master Sergeant',
+                        'ΠΠ»Π°Π΄ΡΠΈΠΉ ΡΠµΡ€Π¶Π°Π½Ρ‚': 'Staff Sergeant',
+                        'Π•Ρ„Ρ€ΠµΠΉΡ‚ΠΎΡ€': 'Sergeant',
+                        'Π΅Ρ‚Π°Ρ€ΡΠΈΠΉ ΠµΡ„Ρ€ΠµΠΉΡ‚ΠΎΡ€': 'Master Corporal',
+                        'ΠΠ°ΠΏΡ€Π°Π»': 'Corporal',
+                        'Π“ΠµΡ„Ρ€ΠµΠΉΡ‚ΠΎΡ€': 'Gefreiter',
+                        'Π ΡΠ΄ΠΎΠ²ΠΎΠΉ': 'Private',
+                        'ΠΠΎΠ²ΠΎΠ±Ρ€Π°Π½ΠµΡ†': 'Recruit'
                     }
                     player_data['rank'] = rank_mapping.get(rank_text, rank_text)
                     rank_found = True
@@ -351,11 +349,11 @@ except Exception as e:
             logger.info(f"Found numbers in HTML: {all_numbers[:20]}")  # Log first 20 numbers
             
             # Parse kills and deaths from Russian website structure
-            # From screenshot: "Уничтожил" (destroyed/kills) and "Падение" (deaths)
+            # From screenshot: "Π£Π½ΠΈΡ‡Ρ‚ΠΎΠ¶ΠΈΠ»" (destroyed/kills) and "ΠΠ°Π΄ΠµΠ½ΠΈΠµ" (deaths)
             
-            # Look for kills pattern - "Уничтожил" in combat stats section with comma-separated numbers
+            # Look for kills pattern - "Π£Π½ΠΈΡ‡Ρ‚ΠΎΠ¶ΠΈΠ»" in combat stats section with comma-separated numbers
             kills_patterns = [
-                r'Уничтожил[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',  # Support both space and comma separators
+                r'Π£Π½ΠΈΡ‡Ρ‚ΠΎΠ¶ΠΈΠ»[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',  # Support both space and comma separators
                 r'Destroyed[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',
                 r'"destroyed"[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)'
             ]
@@ -371,8 +369,8 @@ except Exception as e:
             # Look for deaths pattern - "Hit" is the correct field name from the RTanks site
             deaths_patterns = [
                 r'Hit\s*(\d{1,3}(?:[\s,]\d{3})*)',  # Match "Hit" followed by number (from RTanks site)
-                r'Подбит[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',  # Russian alternative
-                r'Падение[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',  # Russian alternative
+                r'ΠΠΎΠ΄Π±ΠΈΡ‚[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',  # Russian alternative
+                r'ΠΠ°Π΄ΠµΠ½ΠΈΠµ[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',  # Russian alternative
                 r'"deaths"[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)'
             ]
             
@@ -384,12 +382,12 @@ except Exception as e:
                     logger.info(f"Found deaths: {player_data['deaths']} from pattern {pattern}")
                     break
             
-            # Parse K/D ratio - "У/П" from Russian website
+            # Parse K/D ratio - "Π£/Π" from Russian website
             kd_patterns = [
-                r'У/П[^0-9]*(\d+\.?\d*)',
+                r'Π£/Π[^0-9]*(\d+\.?\d*)',
                 r'U/P[^0-9]*(\d+\.?\d*)',
                 r'"efficiency"[^0-9]*(\d+\.?\d*)',
-                r'По эффективности[^0-9]*#\d+[^0-9]*(\d+\.?\d*)'
+                r'ΠΠΎ ΡΡ„Ρ„ΠµΠΊΡ‚ΠΈΠ²Π½ΠΎΡΡ‚ΠΈ[^0-9]*#\d+[^0-9]*(\d+\.?\d*)'
             ]
             
             for pattern in kd_patterns:
@@ -407,7 +405,7 @@ except Exception as e:
             # Parse premium status - look for "Yes" near "Premium"
             premium_patterns = [
                 r'Premium[^A-Za-z]*Yes',
-                r'Премиум[^А-Яа-я]*Да'
+                r'ΠΡ€ΠµΠΌΠΈΡƒΠΌ[^Π-Π―Π°-Ρ]*Π”Π°'
             ]
             
             for pattern in premium_patterns:
@@ -419,7 +417,7 @@ except Exception as e:
             # Parse group
             group_patterns = [
                 r'Group[^A-Za-z]*(\w+)',
-                r'Группа[^А-Яа-я]*([А-Яа-я\w]+)'
+                r'Π“Ρ€ΡƒΠΏΠΏΠ°[^Π-Π―Π°-Ρ]*([Π-Π―Π°-Ρ\w]+)'
             ]
             
             for pattern in group_patterns:
@@ -427,21 +425,21 @@ except Exception as e:
                 if group_match:
                     group_text = group_match.group(1)
                     group_mapping = {
-                        'Помощник': 'Helper',
-                        'Игрок': 'Player',
-                        'Модератор': 'Moderator',
-                        'Администратор': 'Administrator'
+                        'ΠΠΎΠΌΠΎΡ‰Π½ΠΈΠΊ': 'Helper',
+                        'ΠΠ³Ρ€ΠΎΠΊ': 'Player',
+                        'ΠΠΎΠ΄ΠµΡ€Π°Ρ‚ΠΎΡ€': 'Moderator',
+                        'ΠΠ΄ΠΌΠΈΠ½ΠΈΡΡ‚Ρ€Π°Ρ‚ΠΎΡ€': 'Administrator'
                     }
                     player_data['group'] = group_mapping.get(group_text, group_text)
                     logger.info(f"Found group: {player_data['group']}")
                     break
             
-            # Parse gold boxes - "Поймано золотых ящиков" from Russian website
+            # Parse gold boxes - "ΠΠΎΠΉΠΌΠ°Π½ΠΎ Π·ΠΎΠ»ΠΎΡ‚Ρ‹Ρ… ΡΡ‰ΠΈΠΊΠΎΠ²" from Russian website
             gold_patterns = [
-                r'Поймано золотых ящиков[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',  # Support space and comma separators
+                r'ΠΠΎΠΉΠΌΠ°Π½ΠΎ Π·ΠΎΠ»ΠΎΡ‚Ρ‹Ρ… ΡΡ‰ΠΈΠΊΠΎΠ²[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',  # Support space and comma separators
                 r'Caught gold boxes[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',
                 r'gold boxes[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)',
-                r'золотых ящиков[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)'
+                r'Π·ΠΎΠ»ΠΎΡ‚Ρ‹Ρ… ΡΡ‰ΠΈΠΊΠΎΠ²[^0-9]*(\d{1,3}(?:[\s,]\d{3})*)'
             ]
             
             for pattern in gold_patterns:
@@ -452,18 +450,18 @@ except Exception as e:
                     logger.info(f"Found gold boxes: {player_data['gold_boxes']} from pattern {pattern}")
                     break
             
-            # Parse equipment (looking for "Установленный Да")
+            # Parse equipment (looking for "Π£ΡΡ‚Π°Π½ΠΎΠ²Π»ΠµΠ½Π½Ρ‹ΠΉ Π”Π°")
             turret_mapping = {
-                'Смоки': 'Smoky', 'Рельса': 'Rail', 'Рикошет': 'Ricochet', 
-                'Изида': 'Isida', 'Фриз': 'Freeze', 'Огнемет': 'Flamethrower',
-                'Гром': 'Thunder', 'Молот': 'Hammer', 'Вулкан': 'Vulcan',
-                'Твинс': 'Twins', 'Шафт': 'Shaft', 'Страйкер': 'Striker'
+                'Π΅ΠΌΠΎΠΊΠΈ': 'Smoky', 'Π ΠµΠ»ΡΡΠ°': 'Rail', 'Π ΠΈΠΊΠΎΡΠµΡ‚': 'Ricochet', 
+                'ΠΠ·ΠΈΠ΄Π°': 'Isida', 'Π¤Ρ€ΠΈΠ·': 'Freeze', 'ΠΠ³Π½ΠµΠΌΠµΡ‚': 'Flamethrower',
+                'Π“Ρ€ΠΎΠΌ': 'Thunder', 'ΠΠΎΠ»ΠΎΡ‚': 'Hammer', 'Π’ΡƒΠ»ΠΊΠ°Π½': 'Vulcan',
+                'ΠΆΠ²ΠΈΠ½Ρ': 'Twins', 'Π¨Π°Ρ„Ρ‚': 'Shaft', 'Π΅Ρ‚Ρ€Π°ΠΉΠΊΠµΡ€': 'Striker'
             }
             
             hull_mapping = {
-                'Хантер': 'Hunter', 'Мамонт': 'Mammoth', 'Титан': 'Titan',
-                'Васп': 'Wasp', 'Викинг': 'Viking', 'Хорнет': 'Hornet',
-                'Диктатор': 'Dictator'
+                'Π¥Π°Π½Ρ‚ΠµΡ€': 'Hunter', 'ΠΠ°ΠΌΠΎΠ½Ρ‚': 'Mammoth', 'ΠΆΠΈΡ‚Π°Π½': 'Titan',
+                'Π’Π°ΡΠΏ': 'Wasp', 'Π’ΠΈΠΊΠΈΠ½Π³': 'Viking', 'Π¥ΠΎΡ€Π½ΠµΡ‚': 'Hornet',
+                'Π”ΠΈΠΊΡ‚Π°Ρ‚ΠΎΡ€': 'Dictator'
             }
             
             # Parse equipment from the detailed equipment section
@@ -476,7 +474,7 @@ except Exception as e:
                 # Look for this turret in the HTML with multiple patterns
                 patterns = [
                     f'{russian_name}\\s*M(\\d)',  # "Smoky M0", "Rail M1", etc.
-                    f'{russian_name}\\s*М(\\d)',  # Russian М instead of M
+                    f'{russian_name}\\s*Π(\\d)',  # Russian Π instead of M
                     f'{english_name}\\s*M(\\d)'   # English names
                 ]
                 
@@ -485,7 +483,7 @@ except Exception as e:
                     matches = re.findall(pattern, html, re.IGNORECASE)
                     for mod_level in matches:
                         # Check if this equipment is installed
-                        install_pattern = f'{russian_name}.*?Installed.*?Yes|{english_name}.*?Installed.*?Yes|{russian_name}.*?Установленный.*?Да'
+                        install_pattern = f'{russian_name}.*?Installed.*?Yes|{english_name}.*?Installed.*?Yes|{russian_name}.*?Π£ΡΡ‚Π°Π½ΠΎΠ²Π»ΠµΠ½Π½Ρ‹ΠΉ.*?Π”Π°'
                         if re.search(install_pattern, html, re.DOTALL | re.IGNORECASE):
                             player_data['equipment']['turrets'].append(f"{english_name} M{mod_level}")
                             found_equipment = True
@@ -493,7 +491,7 @@ except Exception as e:
                 
                 # If no specific mod level found but equipment is installed, default to M0
                 if not found_equipment:
-                    install_pattern = f'{russian_name}.*?Installed.*?Yes|{english_name}.*?Installed.*?Yes|{russian_name}.*?Установленный.*?Да'
+                    install_pattern = f'{russian_name}.*?Installed.*?Yes|{english_name}.*?Installed.*?Yes|{russian_name}.*?Π£ΡΡ‚Π°Π½ΠΎΠ²Π»ΠµΠ½Π½Ρ‹ΠΉ.*?Π”Π°'
                     if re.search(install_pattern, html, re.DOTALL | re.IGNORECASE):
                         player_data['equipment']['turrets'].append(f"{english_name} M0")
                         logger.info(f"Found turret (default M0): {english_name}")
@@ -502,7 +500,7 @@ except Exception as e:
                 # Look for this hull in the HTML with multiple patterns
                 patterns = [
                     f'{russian_name}\\s*M(\\d)',  # "Hunter M0", "Mammoth M1", etc.
-                    f'{russian_name}\\s*М(\\d)',  # Russian М instead of M
+                    f'{russian_name}\\s*Π(\\d)',  # Russian Π instead of M
                     f'{english_name}\\s*M(\\d)'   # English names
                 ]
                 
@@ -511,7 +509,7 @@ except Exception as e:
                     matches = re.findall(pattern, html, re.IGNORECASE)
                     for mod_level in matches:
                         # Check if this equipment is installed
-                        install_pattern = f'{russian_name}.*?Installed.*?Yes|{english_name}.*?Installed.*?Yes|{russian_name}.*?Установленный.*?Да'
+                        install_pattern = f'{russian_name}.*?Installed.*?Yes|{english_name}.*?Installed.*?Yes|{russian_name}.*?Π£ΡΡ‚Π°Π½ΠΎΠ²Π»ΠµΠ½Π½Ρ‹ΠΉ.*?Π”Π°'
                         if re.search(install_pattern, html, re.DOTALL | re.IGNORECASE):
                             player_data['equipment']['hulls'].append(f"{english_name} M{mod_level}")
                             found_equipment = True
@@ -519,7 +517,7 @@ except Exception as e:
                 
                 # If no specific mod level found but equipment is installed, default to M0
                 if not found_equipment:
-                    install_pattern = f'{russian_name}.*?Installed.*?Yes|{english_name}.*?Installed.*?Yes|{russian_name}.*?Установленный.*?Да'
+                    install_pattern = f'{russian_name}.*?Installed.*?Yes|{english_name}.*?Installed.*?Yes|{russian_name}.*?Π£ΡΡ‚Π°Π½ΠΎΠ²Π»ΠµΠ½Π½Ρ‹ΠΉ.*?Π”Π°'
                     if re.search(install_pattern, html, re.DOTALL | re.IGNORECASE):
                         player_data['equipment']['hulls'].append(f"{english_name} M0")
                         logger.info(f"Found hull (default M0): {english_name}")
@@ -582,7 +580,7 @@ except Exception as e:
                 'premium': True,  # Assume premium if on rankings
                 'group': 'Unknown',
                 'is_online': False,
-                'status_indicator': '⚫',
+                'status_indicator': 'β«',
                 'equipment': {'turrets': [], 'hulls': []}
             }
             
