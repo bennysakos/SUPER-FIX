@@ -8,6 +8,8 @@ import asyncio
 import logging
 import os
 from dotenv import load_dotenv
+import threading
+from keepalive import run
 
 from bot import RTanksBot
 
@@ -50,6 +52,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
+    threading.Thread(target=run).start()
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Application terminated by user")
