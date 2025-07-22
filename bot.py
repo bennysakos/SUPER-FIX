@@ -58,7 +58,7 @@ class RTanksBot(commands.Bot):
         logger.info(f'Bot is in {len(self.guilds)} guilds')
         
         # Set bot status
-        activity = discord.Game(name="RTanks Online | /player")
+        activity = discord.Game(name="RTanks Online")
         await self.change_presence(activity=activity)
 
     @discord.app_commands.describe(username="RTanks player username to lookup")
