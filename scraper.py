@@ -119,7 +119,7 @@ class RTanksScraper:
             
             # Parse online status from the small circle near player name
             # Look for the actual circle indicator pattern in HTML
-            # Parse online status from a hidden span with id="online_status"
+        # Parse online status from a hidden span with id="online_status"
 try:
     status_span = soup.find('span', id='online_status')
     if status_span:
@@ -132,6 +132,7 @@ try:
 except Exception as e:
     is_online = False
     logger.error(f"Error reading online status from span: {e}")
+
 
             
             player_data['is_online'] = is_online
