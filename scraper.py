@@ -119,33 +119,20 @@ class RTanksScraper:
             
             # Parse online status from the small circle near player name
             # Look for the actual circle indicator pattern in HTML
-            circle_patterns = [
-                r'circle[^>]*color[^>]*green',  # Green circle = online
-                r'indicator[^>]*online',        # Online indicator
-                r'status[^>]*online',          # Online status
-                r'●[^<]*green',                # Green dot symbol
-                r'🟢',                         # Green emoji
-            ]
-            
-            offline_patterns = [
-                r'circle[^>]*color[^>]*gray',   # Gray circle = offline
-                r'circle[^>]*color[^>]*grey',   # Grey circle = offline  
-                r'indicator[^>]*offline',       # Offline indicator
-                r'status[^>]*offline',         # Offline status
-                r'●[^<]*gray',                 # Gray dot symbol
-                r'🔴',                         # Red emoji
-            ]
-            
-            is_online = False
-            for pattern in circle_patterns:
-                if re.search(pattern, html, re.IGNORECASE):
-                    is_online = True
-                    break
-            
-            for pattern in offline_patterns:
-                if re.search(pattern, html, re.IGNORECASE):
-                    is_online = False
-                    break
+            # Parse online status from a hidden span with id="online_status"
+try:
+    status_span = soup.find('span', id='online_status')
+    if status_span:
+        status_text = status_span.get_text(strip=True).lower()
+        is_online = status_text == 'yes'
+        logger.info(f"{username} detected as {'ONLINE' if is_online else 'OFFLINE'} from span")
+    else:
+        is_online = False
+        logger.warning("No <span id='online_status'> found")
+except Exception as e:
+    is_online = False
+    logger.error(f"Error reading online status from span: {e}")
+
             
             player_data['is_online'] = is_online
             player_data['status_indicator'] = '🟢' if is_online else '🔴'
