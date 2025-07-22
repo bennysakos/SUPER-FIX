@@ -96,22 +96,7 @@ class RTanksScraper:
         try:
             soup = BeautifulSoup(html, 'html.parser')
             logger.info(f"Parsing data for {username}")
-            try:
-    status_match = re.search(r'<span[^>]*style="[^"]*display:\s*none[^"]*"[^>]*>\s*(yes|no)\s*</span>', html, re.IGNORECASE)
-
-    if status_match:
-        is_online = status_match.group(1).strip().lower() == 'yes'
-        player_data['is_online'] = is_online
-        player_data['status_indicator'] = '🟢' if is_online else '🔴'
-        logger.info(f"{username} detected as {'ONLINE' if is_online else 'OFFLINE'} (via hidden span)")
-    else:
-        player_data['is_online'] = False
-        player_data['status_indicator'] = '🔴'
-        logger.warning(f"{username} online status not found, defaulting to OFFLINE")
-except Exception as e:
-    player_data['is_online'] = False
-    player_data['status_indicator'] = '🔴'
-    logger.error(f"Failed to parse online status for {username}: {e}")
+            
 
             
             # Initialize player data
