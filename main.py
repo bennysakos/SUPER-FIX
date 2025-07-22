@@ -52,7 +52,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-    threading.Thread(target=run).start()
+        threading.Thread(target=run).start()
         asyncio.run(main())
     except KeyboardInterrupt:
         logger.info("Application terminated by user")
