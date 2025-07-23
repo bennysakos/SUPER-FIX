@@ -110,7 +110,7 @@ class RTanksScraper:
                 'group': 'Unknown',
                 'is_online': False,
                 'status_indicator': '🔴',
-              'equipment': {'turrets': [], 'hulls': [], 'protections': []}
+                'equipment': {'turrets': [], 'hulls': []}
             }
             
             # Debug: Log some of the HTML to understand structure
@@ -463,76 +463,7 @@ class RTanksScraper:
                 'Васп': 'Wasp', 'Викинг': 'Viking', 'Хорнет': 'Hornet',
                 'Диктатор': 'Dictator'
             }
-            # Parse protection/resistance modules - find all active protections
-            try:
-                # Look for resistance/protection modules marked as installed
-                protection_pattern = r'resistances/([^/]+)/m(\d+)/preview\.png.*?Установленный.*?Да'
-                protection_matches = re.findall(protection_pattern, html, re.IGNORECASE | re.DOTALL)
-                
-                for match in protection_matches:
-                    protection_name = match[0].lower().strip()
-                    mod_level = match[1]
-                    
-                    # Map Russian names to English
-                    from config import PROTECTION_NAMES
-                    english_name = PROTECTION_NAMES.get(protection_name, protection_name.title())
-                    
-                    protection_entry = f"{english_name} M{mod_level}"
-                    if protection_entry not in player_data['equipment']['protections']:
-                        player_data['equipment']['protections'].append(protection_entry)
-                        
-                logger.info(f"Found protections for {username}: {player_data['equipment']['protections']}")
-                
-            except Exception as e:
-                logger.error(f"Error parsing protections for {username}: {e}")
-                player_data['equipment']['protections'] = []
             
-            logger.info(f"Found turrets for {username}: {player_data['equipment']['turrets']}")
-            logger.info(f"Found hulls for {username}: {player_data['equipment']['hulls']}")
-            logger.info(f"Found protections for {username}: {player_data['equipment']['protections']}")
-            
-            return player_data
-            
-        except Exception as e:
-            logger.error(f"Error parsing player data for {username}: {e}")
-            return None
-    
-    async def _search_player_on_main_page(self, username):
-        """Search for player on the main leaderboard page."""
-        try:
-            session = await self._get_session()
-            
-            # Check both experience and crystals leaderboards
-            leaderboard_urls = [
-                f"{self.base_url}/",  # Main page with experience leaderboard
-            ]
-            
-            for url in leaderboard_urls:
-                try:
-                    async with session.get(url) as response:
-                        if response.status == 200:
-                            html = await response.text()
-                            
-                            # Look for the player in the leaderboard
-                            player_pattern = rf'href="/user/{re.escape(username)}"[^>]*>.*?{re.escape(username)}'
-                            if re.search(player_pattern, html, re.IGNORECASE):
-                                logger.info(f"Found {username} on leaderboard, fetching full profile")
-                                # Player exists on leaderboard, try to get their full profile
-                                profile_url = f"{self.base_url}/user/{quote(username)}"
-                                async with session.get(profile_url) as profile_response:
-                                    if profile_response.status == 200:
-                                        profile_html = await profile_response.text()
-                                        return await self._parse_player_data(profile_html, username)
-                        
-                except Exception as e:
-                    logger.error(f"Error searching on {url}: {e}")
-                    continue
-            
-            return None
-            
-        except Exception as e:
-            logger.error(f"Error in _search_player_on_main_page: {e}")
-            return None
             # Parse equipment from the detailed equipment section
             # Look for equipment cards showing "Installed: Yes" and extract mod levels
             
