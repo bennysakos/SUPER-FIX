@@ -1,0 +1,469 @@
+"""
+RTanks Online Website Scraper
+Handles scraping player data from the RTanks ratings website.
+"""
+import aiohttp
+import asyncio
+from bs4 import BeautifulSoup
+import random
+import re
+import logging
+from urllib.parse import quote
+import json
+logger = logging.getLogger(__name__)
+class RTanksScraper:
+    def __init__(self):
+        self.base_url = "https://ratings.ranked-rtanks.online"
+        self.session = None
+        
+        # Headers to avoid bot detection
+        self.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.5',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'DNT': '1',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none',
+        }
+        
+    async def _get_session(self):
+        """Get or create an aiohttp session."""
+        if self.session is None or self.session.closed:
+            timeout = aiohttp.ClientTimeout(total=30)
+            self.session = aiohttp.ClientSession(
+                timeout=timeout,
+                headers=self.headers
+            )
+        return self.session
+    
+    async def get_player_data(self, username):
+        """
+        Scrape player data from the RTanks ratings website.
+        Returns a dictionary with player information or None if not found.
+        """
+        try:
+            session = await self._get_session()
+            
+            # Add random delay to avoid rate limiting
+            await asyncio.sleep(random.uniform(0.5, 1.5))
+            
+            # Try the correct URL pattern for RTanks
+            possible_urls = [
+                f"{self.base_url}/user/{quote(username)}"
+            ]
+            
+            player_data = None
+            for url in possible_urls:
+                try:
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            html = await response.text()
+                            player_data = await self._parse_player_data(html, username)
+                            if player_data:
+                                break
+                        elif response.status == 404:
+                            continue
+                        else:
+                            logger.warning(f"Unexpected status code {response.status} for {url}")
+                            continue
+                            
+                except asyncio.TimeoutError:
+                    logger.warning(f"Timeout while fetching {url}")
+                    continue
+                except Exception as e:
+                    logger.error(f"Error fetching {url}: {e}")
+                    continue
+            
+            if not player_data:
+                # Try searching the main page for the player
+                player_data = await self._search_player_on_main_page(username)
+            
+            return player_data
+            
+        except Exception as e:
+            logger.error(f"Error in get_player_data: {e}")
+            return None
+    
+    async def _parse_player_data(self, html, username):
+        """Parse player data from HTML response."""
+        try:
+            soup = BeautifulSoup(html, 'html.parser')
+            logger.info(f"Parsing data for {username}")
+            
+            # Initialize player data
+            player_data = {
+                'username': username,
+                'rank': 'Unknown',
+                'experience': 0,
+                'kills': 0,
+                'deaths': 0,
+                'kd_ratio': '0.00',
+                'gold_boxes': 0,
+                'premium': False,
+                'group': 'Unknown',
+                'is_online': False,
+                'status_indicator': '🔴',
+                'equipment': {'turrets': [], 'hulls': [], 'protections': []}
+            }
+            
+            # Debug: Log some of the HTML to understand structure
+            logger.info(f"HTML contains 'offline': {'offline' in html.lower()}")
+            logger.info(f"HTML contains 'online': {'online' in html.lower()}")
+            
+            # Parse online status from the small circle near player name
+            # Parse online status from a hidden span with id="online_status"
+            try:
+                status_span = soup.find('span', id='online_status')
+                if status_span:
+                    status_text = status_span.get_text(strip=True).lower()
+                    is_online = status_text == 'yes'
+                    logger.info(f"{username} detected as {'ONLINE' if is_online else 'OFFLINE'} from span")
+                else:
+                    is_online = False
+                    logger.warning("No <span id='online_status'> found")
+            except Exception as e:
+                is_online = False
+                logger.error(f"Error reading online status from span: {e}")
+            player_data['is_online'] = is_online
+            player_data['status_indicator'] = '🟢' if is_online else '🔴'
+            logger.info(f"{username} detected as {'ONLINE' if is_online else 'OFFLINE'}")
+            
+            # Parse experience FIRST - Look for current/max format like "105613/125000"
+            exp_patterns = [
+                r'(\d{1,3}(?:\s?\d{3})*)\s*/\s*(\d{1,3}(?:\s?\d{3})*)',  # Current/max format with spaces
+                r'(\d{1,3}(?:,\d{3})*)\s*/\s*(\d{1,3}(?:,\d{3})*)',     # Current/max format with commas
+                r'(\d+)\s*/\s*(\d+)',                                     # Simple current/max format
+            ]
+            
+            # First try to find current/max experience format
+            exp_found = False
+            for pattern in exp_patterns:
+                exp_match = re.search(pattern, html)
+                if exp_match:
+                    current_exp_str = exp_match.group(1).replace(',', '').replace(' ', '')
+                    max_exp_str = exp_match.group(2).replace(',', '').replace(' ', '')
+                    try:
+                        player_data['experience'] = int(current_exp_str)
+                        player_data['max_experience'] = int(max_exp_str)
+                        exp_found = True
+                        logger.info(f"Found experience: {player_data['experience']}/{player_data['max_experience']}")
+                        break
+                    except ValueError:
+                        continue
+            
+            # If current/max format not found, try single experience value
+            if not exp_found:
+                single_exp_patterns = [
+                    r'Experience[^0-9]*(\d{1,3}(?:,?\d{3})*)',
+                    r'Опыт[^0-9]*(\d{1,3}(?:,?\d{3})*)',
+                    r'"experience"[^0-9]*(\d{1,3}(?:,?\d{3})*)'
+                ]
+                
+                for pattern in single_exp_patterns:
+                    exp_match = re.search(pattern, html, re.IGNORECASE)
+                    if exp_match:
+                        exp_str = exp_match.group(1).replace(',', '').replace(' ', '')
+                        player_data['experience'] = int(exp_str)
+                        logger.info(f"Found single experience: {player_data['experience']}")
+                        break
+            
+            # Parse rank - Enhanced detection with experience-based fallback
+            rank_patterns = [
+                r'(Легенда|Legend)\s*(\d*)',
+                r'(Генералиссимус|Generalissimo)',
+                r'(Командир бригады|Brigadier Commander)',
+                r'(Командир полковник|Colonel Commander)',
+                r'(Командир подполковник|Lieutenant Colonel Commander)',
+                r'(Командир майор|Major Commander)',
+                r'(Командир капитан|Captain Commander)',
+                r'(Командир лейтенант|Lieutenant Commander)',
+                r'(Командир|Commander)',
+                r'(Фельдмаршал|Field Marshal)',
+                r'(Маршал|Marshal)',
+                r'(Генерал|General)',
+                r'(Генерал-лейтенант|Lieutenant General)',
+                r'(Генерал-майор|Major General)',
+                r'(Бригадир|Brigadier)',
+                r'(Полковник|Colonel)',
+                r'(Подполковник|Lieutenant Colonel)',
+                r'(Майор|Major)',
+                r'(Капитан|Captain)',
+                r'(Старший лейтенант|First Lieutenant)',
+                r'(Лейтенант|Second Lieutenant)',
+                r'(Старший прапорщик|Master Warrant Officer)',
+                r'(Прапорщик|Warrant Officer)',
+                r'(Старшина|Sergeant Major)',
+                r'(Старший сержант|First Sergeant)',
+                r'(Сержант|Master Sergeant)',
+                r'(Младший сержант|Staff Sergeant)',
+                r'(Ефрейтор|Sergeant)',
+                r'(Старший ефрейтор|Master Corporal)',
+                r'(Капрал|Corporal)',
+                r'(Гефрейтор|Gefreiter)',
+                r'(Рядовой|Private)',
+                r'(Новобранец|Recruit)'
+            ]
+            
+            rank_found = False
+            for pattern in rank_patterns:
+                rank_match = re.search(pattern, html, re.IGNORECASE)
+                if rank_match:
+                    rank_text = rank_match.group(1)
+                    # Map Russian ranks to English
+                    rank_mapping = {
+                        'Легенда': 'Legend',
+                        'Генералиссимус': 'Generalissimo',
+                        'Командир бригады': 'Brigadier Commander',
+                        'Командир полковник': 'Colonel Commander',
+                        'Командир подполковник': 'Lieutenant Colonel Commander',
+                        'Командир майор': 'Major Commander',
+                        'Командир капитан': 'Captain Commander',
+                        'Командир лейтенант': 'Lieutenant Commander',
+                        'Командир': 'Commander',
+                        'Фельдмаршал': 'Field Marshal',
+                        'Маршал': 'Marshal',
+                        'Генерал': 'General',
+                        'Генерал-лейтенант': 'Lieutenant General',
+                        'Генерал-майор': 'Major General',
+                        'Бригадир': 'Brigadier',
+                        'Полковник': 'Colonel',
+                        'Подполковник': 'Lieutenant Colonel',
+                        'Майор': 'Major',
+                        'Капитан': 'Captain',
+                        'Старший лейтенант': 'First Lieutenant',
+                        'Лейтенант': 'Second Lieutenant',
+                        'Старший прапорщик': 'Master Warrant Officer',
+                        'Прапорщик': 'Warrant Officer',
+                        'Старшина': 'Sergeant Major',
+                        'Старший сержант': 'First Sergeant',
+                        'Сержант': 'Master Sergeant',
+                        'Младший сержант': 'Staff Sergeant',
+                        'Ефрейтор': 'Sergeant',
+                        'Старший ефрейтор': 'Master Corporal',
+                        'Капрал': 'Corporal',
+                        'Гефрейтор': 'Gefreiter',
+                        'Рядовой': 'Private',
+                        'Новобранец': 'Recruit'
+                    }
+                    player_data['rank'] = rank_mapping.get(rank_text, rank_text)
+                    rank_found = True
+                    logger.info(f"Found rank: {player_data['rank']}")
+                    break
+            
+            # Parse kills and deaths from combat stats
+            kill_patterns = [
+                r'Уничтожил[^0-9]*(\d{1,3}(?:\s?\d{3})*)',
+                r'Kills[^0-9]*(\d{1,3}(?:,?\d{3})*)',
+                r'"kills"[^0-9]*(\d{1,3}(?:,?\d{3})*)'
+            ]
+            
+            for pattern in kill_patterns:
+                kill_match = re.search(pattern, html, re.IGNORECASE)
+                if kill_match:
+                    kills_str = kill_match.group(1).replace(',', '').replace(' ', '')
+                    player_data['kills'] = int(kills_str)
+                    logger.info(f"Found kills: {player_data['kills']}")
+                    break
+            
+            death_patterns = [
+                r'Подбит[^0-9]*(\d{1,3}(?:\s?\d{3})*)',
+                r'Deaths[^0-9]*(\d{1,3}(?:,?\d{3})*)',
+                r'"deaths"[^0-9]*(\d{1,3}(?:,?\d{3})*)'
+            ]
+            
+            for pattern in death_patterns:
+                death_match = re.search(pattern, html, re.IGNORECASE)
+                if death_match:
+                    deaths_str = death_match.group(1).replace(',', '').replace(' ', '')
+                    player_data['deaths'] = int(deaths_str)
+                    logger.info(f"Found deaths: {player_data['deaths']}")
+                    break
+            
+            # Calculate K/D ratio
+            if player_data['deaths'] > 0:
+                kd_ratio = player_data['kills'] / player_data['deaths']
+                player_data['kd_ratio'] = f"{kd_ratio:.2f}"
+            else:
+                player_data['kd_ratio'] = str(player_data['kills']) if player_data['kills'] > 0 else "0.00"
+            
+            # Parse gold boxes
+            gold_patterns = [
+                r'Поймано золотых ящиков[^0-9]*(\d+)',
+                r'Gold Boxes[^0-9]*(\d+)',
+                r'"gold_boxes"[^0-9]*(\d+)'
+            ]
+            
+            for pattern in gold_patterns:
+                gold_match = re.search(pattern, html, re.IGNORECASE)
+                if gold_match:
+                    player_data['gold_boxes'] = int(gold_match.group(1))
+                    logger.info(f"Found gold boxes: {player_data['gold_boxes']}")
+                    break
+            
+            # Parse premium status
+            premium_patterns = [
+                r'Премиум[^>]*Да',
+                r'Premium[^>]*Yes',
+                r'"premium"[^>]*true'
+            ]
+            
+            for pattern in premium_patterns:
+                if re.search(pattern, html, re.IGNORECASE):
+                    player_data['premium'] = True
+                    logger.info(f"Found premium: {player_data['premium']}")
+                    break
+            
+            # Parse group
+            group_patterns = [
+                r'Группа[^>]*([A-Za-z]+)',
+                r'Group[^>]*([A-Za-z]+)',
+                r'"group"[^>]*"([^"]+)"'
+            ]
+            
+            for pattern in group_patterns:
+                group_match = re.search(pattern, html, re.IGNORECASE)
+                if group_match:
+                    player_data['group'] = group_match.group(1)
+                    logger.info(f"Found group: {player_data['group']}")
+                    break
+            
+            # Parse equipment (turrets and hulls) - Extract all equipment
+            # Parse turrets - show ALL turrets with modification levels
+            turret_pattern = r'turrets/([^/]+)/m(\d+)/preview\.png.*?Установленный.*?Да'
+            turret_matches = re.findall(turret_pattern, html, re.IGNORECASE | re.DOTALL)
+            
+            for match in turret_matches:
+                turret_name = match[0].lower()
+                mod_level = match[1]
+                
+                # Map turret names to proper case
+                turret_mapping = {
+                    'smoky': 'Smoky',
+                    'railgun': 'Rail',
+                    'ricochet': 'Ricochet',
+                    'isida': 'Isida',
+                    'frezee': 'Freeze',
+                    'flamethrower': 'Flamethrower',
+                    'thunder': 'Thunder',
+                    'hammer': 'Hammer',
+                    'vulcan': 'Vulcan',
+                    'twins': 'Twins',
+                    'shaft': 'Shaft',
+                    'striker': 'Striker',
+                    'gauss': 'Gauss',
+                    'magnum': 'Magnum',
+                    'firebird': 'Firebird',
+                    'scorpion': 'Scorpion'
+                }
+                
+                proper_name = turret_mapping.get(turret_name, turret_name.title())
+                turret_entry = f"{proper_name} M{mod_level}"
+                
+                if turret_entry not in player_data['equipment']['turrets']:
+                    player_data['equipment']['turrets'].append(turret_entry)
+            
+            # Parse hulls - show ALL hulls with modification levels
+            hull_pattern = r'hulls/([^/]+)/m(\d+)/preview\.png.*?Установленный.*?Да'
+            hull_matches = re.findall(hull_pattern, html, re.IGNORECASE | re.DOTALL)
+            
+            for match in hull_matches:
+                hull_name = match[0].lower()
+                mod_level = match[1]
+                
+                # Map hull names to proper case
+                hull_mapping = {
+                    'hunter': 'Hunter',
+                    'wasp': 'Wasp',
+                    'titan': 'Titan',
+                    'dictator': 'Dictator',
+                    'viking': 'Viking',
+                    'hornet': 'Hornet',
+                    'mammoth': 'Mammoth',
+                    'crusader': 'Crusader'
+                }
+                
+                proper_name = hull_mapping.get(hull_name, hull_name.title())
+                hull_entry = f"{proper_name} M{mod_level}"
+                
+                if hull_entry not in player_data['equipment']['hulls']:
+                    player_data['equipment']['hulls'].append(hull_entry)
+            
+            # Parse protection/resistance modules - find all active protections
+            try:
+                # Look for resistance/protection modules marked as installed
+                protection_pattern = r'resistances/([^/]+)/m(\d+)/preview\.png.*?Установленный.*?Да'
+                protection_matches = re.findall(protection_pattern, html, re.IGNORECASE | re.DOTALL)
+                
+                for match in protection_matches:
+                    protection_name = match[0].lower().strip()
+                    mod_level = match[1]
+                    
+                    # Map Russian names to English
+                    from config import PROTECTION_NAMES
+                    english_name = PROTECTION_NAMES.get(protection_name, protection_name.title())
+                    
+                    protection_entry = f"{english_name} M{mod_level}"
+                    if protection_entry not in player_data['equipment']['protections']:
+                        player_data['equipment']['protections'].append(protection_entry)
+                        
+                logger.info(f"Found protections for {username}: {player_data['equipment']['protections']}")
+                
+            except Exception as e:
+                logger.error(f"Error parsing protections for {username}: {e}")
+                player_data['equipment']['protections'] = []
+            
+            logger.info(f"Found turrets for {username}: {player_data['equipment']['turrets']}")
+            logger.info(f"Found hulls for {username}: {player_data['equipment']['hulls']}")
+            logger.info(f"Found protections for {username}: {player_data['equipment']['protections']}")
+            
+            return player_data
+            
+        except Exception as e:
+            logger.error(f"Error parsing player data for {username}: {e}")
+            return None
+    
+    async def _search_player_on_main_page(self, username):
+        """Search for player on the main leaderboard page."""
+        try:
+            session = await self._get_session()
+            
+            # Check both experience and crystals leaderboards
+            leaderboard_urls = [
+                f"{self.base_url}/",  # Main page with experience leaderboard
+            ]
+            
+            for url in leaderboard_urls:
+                try:
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            html = await response.text()
+                            
+                            # Look for the player in the leaderboard
+                            player_pattern = rf'href="/user/{re.escape(username)}"[^>]*>.*?{re.escape(username)}'
+                            if re.search(player_pattern, html, re.IGNORECASE):
+                                logger.info(f"Found {username} on leaderboard, fetching full profile")
+                                # Player exists on leaderboard, try to get their full profile
+                                profile_url = f"{self.base_url}/user/{quote(username)}"
+                                async with session.get(profile_url) as profile_response:
+                                    if profile_response.status == 200:
+                                        profile_html = await profile_response.text()
+                                        return await self._parse_player_data(profile_html, username)
+                        
+                except Exception as e:
+                    logger.error(f"Error searching on {url}: {e}")
+                    continue
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error in _search_player_on_main_page: {e}")
+            return None
+    
+    async def close(self):
+        """Close the aiohttp session."""
+        if self.session and not self.session.closed:
+            await self.session.close()
