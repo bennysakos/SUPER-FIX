@@ -67,21 +67,7 @@ HULL_NAMES = [
     'Hornet', 'Wasp', 'Hunter', 'Viking', 'Dictator', 'Titan', 
     'Mammoth', 'Smoky', 'Crusader'
 ]
-# Protection/Resistance module names mapping (Russian to English)
-PROTECTION_NAMES = {
-    'дельфин': 'Dolphin',
-    'оцелот': 'Ocelot', 
-    'лев': 'Lion',
-    'барсук': 'Badger',
-    'сокол': 'Falcon',
-    'гризли': 'Grizzly',
-    'медведь': 'Bear',
-    'тигр': 'Tiger',
-    'волк': 'Wolf',
-    'орел': 'Eagle',
-    'кобра': 'Cobra',
-    'пантера': 'Panther'
-}
+
 # Known rank names for parsing
 RANK_NAMES = [
     'Recruit', 'Private', 'Gefreiter', 'Corporal', 'Master Corporal',
