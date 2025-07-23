@@ -264,7 +264,7 @@ class RTanksBot(commands.Bot):
             inline=True
         )
         
-        # Equipment - show all equipment with exact modification levels including protections
+        # Equipment - show all equipment with exact modification levels
         if player_data['equipment']:
             equipment_text = ""
             
@@ -274,14 +274,7 @@ class RTanksBot(commands.Bot):
             
             if player_data['equipment'].get('hulls'):
                 hulls = ", ".join(player_data['equipment']['hulls'])  # Show all hulls
-                equipment_text += f"**Hulls:** {hulls}\n"
-            
-            # Add protections section
-            if player_data['equipment'].get('protections'):
-                protections = ", ".join(player_data['equipment']['protections'])
-                equipment_text += f"**Protections:** {protections}"
-            else:
-                equipment_text += f"**Protections:** None"
+                equipment_text += f"**Hulls:** {hulls}"
             
             if equipment_text:
                 embed.add_field(
@@ -291,6 +284,7 @@ class RTanksBot(commands.Bot):
                 )
         
         embed.set_footer(text="Data from ratings.ranked-rtanks.online")
+        
         return embed
 
     async def _check_website_status(self):
