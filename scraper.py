@@ -110,7 +110,7 @@ class RTanksScraper:
                 'group': 'Unknown',
                 'is_online': False,
                 'status_indicator': '🔴',
-                'equipment': {'turrets': [], 'hulls': []}
+              'equipment': {'turrets': [], 'hulls': [], 'protections': []}
             }
             
             # Debug: Log some of the HTML to understand structure
