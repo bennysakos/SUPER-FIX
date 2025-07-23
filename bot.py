@@ -292,7 +292,6 @@ if player_data['equipment']:
         
         embed.set_footer(text="Data from ratings.ranked-rtanks.online")
         
-        return embed
 
     async def _check_website_status(self):
         """Check if the RTanks website is accessible."""
