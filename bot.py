@@ -190,7 +190,7 @@ class RTanksBot(commands.Bot):
         
         await interaction.followup.send(embed=embed)
 
-        async def _create_player_embed(self, player_data):
+    async def _create_player_embed(self, player_data):
         """Create a formatted embed for player data."""
         # Create embed with activity status
         activity_status = "Online" if player_data['is_online'] else "Offline"
@@ -292,8 +292,6 @@ class RTanksBot(commands.Bot):
         
         embed.set_footer(text="Data from ratings.ranked-rtanks.online")
         return embed
-
-        
 
     async def _check_website_status(self):
         """Check if the RTanks website is accessible."""
