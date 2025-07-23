@@ -264,24 +264,31 @@ class RTanksBot(commands.Bot):
             inline=True
         )
         
-        # Equipment - show all equipment with exact modification levels
-        if player_data['equipment']:
-            equipment_text = ""
-            
-            if player_data['equipment'].get('turrets'):
-                turrets = ", ".join(player_data['equipment']['turrets'])  # Show all turrets
-                equipment_text += f"**Turrets:** {turrets}\n"
-            
-            if player_data['equipment'].get('hulls'):
-                hulls = ", ".join(player_data['equipment']['hulls'])  # Show all hulls
-                equipment_text += f"**Hulls:** {hulls}"
-            
-            if equipment_text:
-                embed.add_field(
-                    name="Equipment",
-                    value=equipment_text,
-                    inline=False
-                )
+        # Equipment - show all equipment with exact modification levels including protections
+if player_data['equipment']:
+    equipment_text = ""
+    
+    if player_data['equipment'].get('turrets'):
+        turrets = ", ".join(player_data['equipment']['turrets'])  # Show all turrets
+        equipment_text += f"**Turrets:** {turrets}\n"
+    
+    if player_data['equipment'].get('hulls'):
+        hulls = ", ".join(player_data['equipment']['hulls'])  # Show all hulls
+        equipment_text += f"**Hulls:** {hulls}\n"
+    
+    # Add protections section
+    if player_data['equipment'].get('protections'):
+        protections = ", ".join(player_data['equipment']['protections'])
+        equipment_text += f"**Protections:** {protections}"
+    else:
+        equipment_text += f"**Protections:** None"
+    
+    if equipment_text:
+        embed.add_field(
+            name="Equipment",
+            value=equipment_text,
+            inline=False
+        )
         
         embed.set_footer(text="Data from ratings.ranked-rtanks.online")
         
